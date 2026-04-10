@@ -6,13 +6,16 @@ Governed transformation pipeline for FAMCare extracts. Standardizes, cleans, and
 
 ## Key Features
 This ETL pipeline is built around:
-- Metadata-driven cleaning using the `analytic_fields` table
-- Normalization and standardization of FAMCare extracts
-- Enrollment grain `q-epicc-pathclient-enrollments` construction
-- Latest slowly changing dimension (SCD) records joined to final table
-- All SCD rows avaialable in standalone, long-format table
-- Wide, reporting-ready full referral flow table
-- Transparent, auditable transformations with intermediate diagnostics
+- **Performing metadata-driven cleaning** using the `analytic_fields` table
+- **Normalizating and standardizing** FAMCare extracts
+- **Pivoting the Pathway event-grain program `pathclient_enrollments` tables** to produce program-specific enrollment-grain tibbles
+- **Joining client demographics data** to the enrollment-grain tibble
+- **Joining the Pathway Event form tables** to represent the entire referral flow from program enrollment to matriculation (when relevant) using `tiedenrollment`
+- **Joining only the latest slowly changing dimension (SCD) records** using `parent_form.docserno` = `scd_form.parent_docserno`
+- **Producing a final wide, reporting-ready full referral flow table**
+- **Loading all SCD rows** to a standalone, long-format tibble
+- **Loading all program enrollments** in `q-foo-providerplacement` to a standalone tibble
+- **Saving transparent, auditable transformations** with intermediate diagnostics tibbles
 
 ## Architecture
 This repository represents the **transformation and reporting** layer of the FAMCare ETL pipeline:
