@@ -1,0 +1,442 @@
+# ======================================================================
+# fiscal_dates.R
+# Centralized fiscal-year and quarter utilities for all programs.
+# Supports:
+#   - Federal Fiscal Year (Oct 1 – Sep 30)
+#   - State Fiscal Year   (Jul 1 – Jun 30)
+#   - Optional lag windows
+#   - Rolling comparisons
+#   - Quarter/FY labels
+#   - Same-period-prior-year logic
+# ======================================================================
+
+library(lubridate)
+library(dplyr)
+library(stringr)
+library(purrr)
+
+# ----------------------------------------------------------------------
+# 1. Generic helpers
+# ----------------------------------------------------------------------
+
+# Generic fiscal quarter
+fy_quarter <- function(
+  date,
+    fiscal_start_month
+    ) {
+      quarter(
+        date,
+        fiscal_start = fiscal_start_month
+        )
+}
+
+# Generic fiscal year (4-digit)
+fy_year <- function(
+  date,
+   fiscal_start_month
+   ) {
+    quarter(
+      date,
+       with_year = TRUE,
+        fiscal_start = fiscal_start_month
+        )
+}
+
+# Generic quarter start
+fy_quarter_start <- function(
+  date,
+   fiscal_start_month
+   ) {
+    floor_date(
+      date,
+       "quarter",
+        fiscal_start = fiscal_start_month
+        )
+}
+
+# Generic quarter end
+fy_quarter_end <- function(
+  date,
+   fiscal_start_month
+   ) {
+    ceiling_date(
+      date,
+       "quarter",
+        fiscal_start = fiscal_start_month
+        ) - days(1)
+}
+
+# Generic FY start
+fy_start <- function(
+  date,
+   fiscal_start_month
+   ) {
+    fy <- fy_year(
+      date,
+       fiscal_start_month
+       )
+    start_year <- fy - 1
+  as.Date(
+    sprintf(
+      "%04d-%02d-01",
+       start_year,
+        fiscal_start_month
+        )
+      )
+}
+
+# Generic FY end
+fy_end <- function(
+  date,
+  fiscal_start_month
+) {
+  fy <- fy_year(
+    date,
+    fiscal_start_month
+  )
+  end_month <- fiscal_start_month - 1
+  if (
+    end_month == 0
+  ) end_month <- 12
+  end_year <- ifelse(
+    end_month == 12,
+    fy - 1,
+    fy
+  )
+  ceiling_date(
+    as.Date(
+      sprintf(
+        "%04d-%02d-01",
+        end_year,
+        end_month
+      )
+    ),
+    "month"
+  ) - days(1)
+}
+
+# Generic quarter label
+fy_quarter_label <- function(
+  date,
+  fiscal_start_month
+) {
+  q <- fy_quarter(
+    date,
+    fiscal_start_month
+  )
+  fy <- fy_year(
+    date,
+    fiscal_start_month
+  )
+  paste0(
+    "Q",
+    q,
+    " FY",
+    fy
+  )
+}
+
+# Generic same-period-prior-year
+same_period_prior_fy <- function(
+  date,
+  fiscal_start_month
+) {
+  prior <- date %m-% years(1)
+  fy_quarter_label(
+    prior,
+    fiscal_start_month
+  )
+}
+
+# ----------------------------------------------------------------------
+# 2. Federal Fiscal Year (Oct 1 – Sep 30)
+# ----------------------------------------------------------------------
+
+federal_fy_quarter <- function(
+  date
+) fy_quarter(
+  date,
+  10
+)
+
+federal_fy_year <- function(
+  date
+) fy_year(
+  date,
+  10
+)
+
+federal_quarter_start <- function(
+  date
+) fy_quarter_start(
+  date,
+  10
+)
+
+federal_quarter_end <- function(
+  date
+) fy_quarter_end(
+  date,
+  10
+)
+
+federal_fy_start <- function(
+  date
+) fy_start(
+  date,
+  10
+)
+
+federal_fy_end <- function(
+  date
+) fy_end(
+  date,
+  10
+)
+
+federal_fy_label <- function(
+  date
+) fy_quarter_label(
+  date,
+  10
+)
+
+federal_same_period_prior <- function(
+  date
+) same_period_prior_fy(
+  date,
+  10
+)
+
+# ----------------------------------------------------------------------
+# 3. State Fiscal Year (Jul 1 – Jun 30)
+# ----------------------------------------------------------------------
+
+state_fy_quarter <- function(
+    date
+    ) fy_quarter(
+      date,
+      7
+      )
+state_fy_year <- function(
+    date
+    ) fy_year(
+      date,
+      7
+      )
+
+state_quarter_start <- function(
+    date
+    ) fy_quarter_start(
+      date,
+      7
+      )
+state_quarter_end <- function(
+    date
+    ) fy_quarter_end(
+      date,
+      7
+      )
+
+state_fy_start <- function(
+    date
+    ) fy_start(
+      date,
+      7
+      )
+state_fy_end <- function(
+    date
+    ) fy_end(
+      date,
+      7
+      )
+
+state_fy_label <- function(
+    date
+    ) fy_quarter_label(
+      date,
+      7
+      )
+state_same_period_prior <- function(
+    date
+    ) same_period_prior_fy(
+      date,
+      7
+      )
+
+# ----------------------------------------------------------------------
+# 4. Lag functions (optional)
+# ----------------------------------------------------------------------
+
+# Lag by N months (e.g., 3-month lag)
+lag_months <- function(
+    date,
+    n = 3
+    ) {
+  date %m-% months(
+    n
+    )
+}
+
+# Lag by one fiscal quarter
+lag_quarter <- function(
+    date,
+    fiscal_system = c(
+      "state",
+      "federal"
+      )
+    ) {
+  fiscal_system <- match.arg(
+    fiscal_system
+    )
+
+  if (
+    fiscal_system == "state"
+    ) {
+    start <- state_quarter_start(
+      date
+      )
+    return(
+      start %m-% months(
+        3
+        )
+      )
+  }
+
+  if (
+    fiscal_system == "federal"
+    ) {
+    start <- federal_quarter_start(
+      date
+      )
+    return(
+      start %m-% months(
+        3
+        )
+      )
+  }
+}
+
+# ----------------------------------------------------------------------
+# 5. Rolling comparison helpers
+# ----------------------------------------------------------------------
+
+# Rolling N fiscal quarters
+rolling_quarters <- function(
+    date,
+    n = 3,
+    fiscal_system = c(
+      "state",
+      "federal"
+      )
+    ) {
+  fiscal_system <- match.arg(
+    fiscal_system
+    )
+
+  if (
+    fiscal_system == "state"
+    ) {
+    starts <- purrr::map(
+      0:(
+        n - 1
+        ),
+      ~ state_quarter_start(
+        date
+        ) %m-% months(
+          3 * .x
+          )
+      )
+    return(
+      starts
+      )
+  }
+
+  if (
+    fiscal_system == "federal"
+    ) {
+    starts <- purrr::map(
+      0:(
+        n - 1
+        ),
+      ~ federal_quarter_start(
+        date
+        ) %m-% months(
+          3 * .x
+          )
+      )
+    return(
+      starts
+      )
+  }
+}
+
+# Rolling N fiscal years
+rolling_fy_periods <- function(
+    date,
+    n = 3,
+    fiscal_system = c(
+      "state",
+      "federal"
+      )
+    ) {
+  fiscal_system <- match.arg(
+    fiscal_system
+    )
+
+  if (
+    fiscal_system == "state"
+    ) {
+    years <- purrr::map(
+      0:(
+        n - 1
+        ),
+      ~ state_fy_year(
+        date
+        ) - .x
+      )
+    return(
+      years
+      )
+  }
+
+  if (
+    fiscal_system == "federal"
+    ) {
+    years <- purrr::map(
+      0:(
+        n - 1
+        ),
+      ~ federal_fy_year(
+        date
+        ) - .x
+      )
+    return(
+      years
+      )
+  }
+}
+
+# ----------------------------------------------------------------------
+# 6. Month-year labels (useful for reporting)
+# ----------------------------------------------------------------------
+
+month_year_label <- function(
+    date
+    ) {
+  paste0(
+    month(
+      date,
+      label = TRUE,
+      abbr = FALSE
+      ),
+    " ",
+    year(
+      date
+      )
+    )
+}
+
+# ======================================================================
+# END OF MODULE
+# ======================================================================
