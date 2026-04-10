@@ -30,7 +30,7 @@ famcare-etl-governed  ← (this repo)
   - Pathway Event alignment and joins to program enrollments
   - Wide table construction
         ↓
-Analytics-ready datasets (epicc_full_data, subsets, diagnostics)
+Analytics-ready datasets (program_foo_full_data, subsets, diagnostics)
 ```
 
 ## Outputs
@@ -40,7 +40,7 @@ The ETL produces a variety of objects in a structured list for downstream use. T
 - intermediate tibble `joined_referral_flow`: the wide, fully joined Pathway Event table with active SCD records joined
 - intermediate tibbles `intake_one`, `payor_one`, `housing_one`: tables of active SCD records for QA
 - intermediate tibble `parent_map`: event `docserno` to SCD summation `parent_docserno` mapping for QA
-- `epicc_full_data`: the final, wide, enrollment-grained dataset
+- `program_foo_full_data`: the final, wide, enrollment-grained dataset
 - optional subsets based on date ranges and fiscal system
 
 ## Status
