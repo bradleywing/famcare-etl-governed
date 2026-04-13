@@ -1,5 +1,5 @@
-# ======================================================================
-# CARTOGRAPHY MODULE (REFACTORED)
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# CARTOGRAPHY MODULE (REFACTORED) ----
 # Purpose:
 #   - Provide a cached, reusable cartography bundle for reporting
 #   - Build and cache objects only when source data or code changes
@@ -10,23 +10,48 @@
 #   - county_seven.rds
 #   - zcta_fips.rds
 #   - north_zip_codes.rds
-# ======================================================================
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-# ----------------------------------------------------------------------
-# 1. lintr options
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# 1. lintr options ----
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 # Disable lintr warnings for object usage in this module, as objects are built
 # and used within the same function scope.
 
 # nolint start: object_usage_linter
 
-# ----------------------------------------------------------------------
-# 2. Paths and cache files
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# 2. Paths and cache files ----
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
 lut_dir <- "P:/DATA/LUTs"
 
-cache_dir <- here::here(
+# Determine if the VPN is connected
+if (
+  !dir.exists(
+    lut_dir
+  )
+) {
+  stop(
+    "LUT directory not found: ", lut_dir,
+    "\nIs your VPN connected and the P: drive mounted?"
+  )
+}
+
+# Determine ETL repo root depending on execution context
+if (
+  exists(
+    "etl_dir"
+  )
+) {
+  root <- etl_dir
+} else {
+  root <- here::here()
+}
+
+cache_dir <- file.path(
+  root,
   "data_intermediate",
   "cartography"
 )
@@ -61,14 +86,27 @@ cache_files <- list(
   )
 )
 
-# ----------------------------------------------------------------------
-# 3. Cache validation helpers
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# 3. Cache validation helpers ----
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 # Returns the timestamp of this module's source file.
 cartography_source_timestamp <- function() {
+
+    # Determine ETL repo root depending on execution context
+  if (
+    exists(
+      "etl_dir"
+    )
+  ) {
+    root <- etl_dir
+  } else {
+    root <- here::here()
+  }
+
   file.info(
-    here::here(
+    file.path(
+      root,
       "R",
       "cartography.R"
     )
@@ -120,7 +158,7 @@ cartography_cache_timestamp <- function() {
     )
 }
 
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # Function cartography cache is valid:
 #
 # Determines whether cached cartography objects can be reused.
@@ -134,7 +172,8 @@ cartography_cache_timestamp <- function() {
 #   - ZIP Code metadata is updated
 #   - cartography.R is modified
 #   - cache files are missing or deleted
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
 cartography_cache_is_valid <- function() {
   all(
     file.exists(
@@ -153,9 +192,9 @@ cartography_cache_is_valid <- function() {
     cartography_cache_timestamp() >= cartography_source_timestamp()
 }
 
-# ----------------------------------------------------------------------
-# 4. Core ETL builders
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# 4. Core ETL builders ----
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 # Hard-coded Promise Zone ZIP Codes (stable, federally defined)
 build_promise_zone_zips <- function() {
@@ -425,11 +464,11 @@ build_zcta_fips <- function(
     )
 }
 
-# ----------------------------------------------------------------------
-# 5. Build full cartography bundle
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# 5. Build full cartography bundle ----
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # Function build cartography:
 #
 # Performs the full ETL pipeline:
@@ -444,7 +483,8 @@ build_zcta_fips <- function(
 #   - Cache is missing
 #   - ZIP metadata LUT changes
 #   - cartography.R changes
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
 build_cartography <- function() {
   pz_zips <- build_promise_zone_zips()
   mo_county_fips_lut <- build_mo_county_fips_lut()
@@ -497,29 +537,45 @@ build_cartography <- function() {
   )
 }
 
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # 6. Public loader
-# ----------------------------------------------------------------------
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 load_cartography <- function() {
-  if (!cartography_cache_is_valid()) {
-    message("Rebuilding cartography cache...")
-    return(build_cartography())
+  if (
+    !cartography_cache_is_valid()
+  ) {
+    message(
+      "Rebuilding cartography cache..."
+    )
+    return(
+      build_cartography()
+    )
   }
 
-  message("Loading cached cartography...")
+  message(
+    "Loading cached cartography..."
+  )
 
   list(
-    county_two = readRDS(cache_files$county_two),
-    county_seven = readRDS(cache_files$county_seven),
-    zcta_fips = readRDS(cache_files$zcta_fips),
-    north_zip_codes = readRDS(cache_files$north_zip_codes)
+    county_two = readRDS(
+      cache_files$county_two
+      ),
+    county_seven = readRDS(
+      cache_files$county_seven
+      ),
+    zcta_fips = readRDS(
+      cache_files$zcta_fips
+      ),
+    north_zip_codes = readRDS(
+      cache_files$north_zip_codes
+      )
   )
 }
 
 # End disabling of lintr warnings for object usage in this module.
 # nolint end
 
-# ======================================================================
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # END OF CARTOGRAPHY MODULE
-# ======================================================================
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
