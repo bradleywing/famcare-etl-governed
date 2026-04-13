@@ -15,9 +15,11 @@ library(rlang)
 `%nin%` <- function(
   x,
   y
-  ) !(
-   x %in% y
+) {
+  !(
+    x %in% y
   )
+}
 
 # This is intended to be used with select() to drop empty columns. This is
 # redundant with fn drop_empty_cols, but it is used throughout etl files.
@@ -25,7 +27,7 @@ library(rlang)
 # existing code, but prefer drop_empty_cols in new code.
 not_all_na <- function(
   x
-  ) {
+) {
   !all(
     is.na(
       x
@@ -36,7 +38,7 @@ not_all_na <- function(
 coalesce_na <- function(
   x,
   value
-  ) {
+) {
 
   dplyr::coalesce(
     x,
@@ -50,8 +52,8 @@ coalesce_na <- function(
 
 trim_ws <- function(
   x
-  ) {
-  str_trim(
+) {
+  stringr::str_trim(
     x,
     side = "both"
   )
@@ -59,9 +61,9 @@ trim_ws <- function(
 
 str_empty_to_na <- function(
   x
-  ) {
+) {
   ifelse(
-    str_trim(
+    stringr::str_trim(
       x
     ) == "",
     NA,
@@ -71,8 +73,8 @@ str_empty_to_na <- function(
 
 str_to_title_case <- function(
   x
-  ) {
-  str_to_title(
+) {
+  stringr::str_to_title(
     x
   )
 }
@@ -80,24 +82,24 @@ str_to_title_case <- function(
 # Optional: BHN-specific name cleaning
 clean_names_bhn <- function(
   df
-  ) {
-  df %>%
-    rename_with(
-      ~ str_replace_all(
+) {
+  df |>
+    dplyr::rename_with(
+      ~ stringr::str_replace_all(
         .,
         "[^A-Za-z0-9_]",
         "_"
       )
-    ) %>%
-    rename_with(
-      ~ str_replace_all(
+    ) |>
+    dplyr::rename_with(
+      ~ stringr::str_replace_all(
         .,
         "__+",
         "_"
       )
-    ) %>%
-    rename_with(
-      ~ str_to_lower(
+    ) |>
+    dplyr::rename_with(
+      ~ stringr::str_to_lower(
         .
       )
     )
@@ -110,7 +112,7 @@ clean_names_bhn <- function(
 pct <- function(
   x,
   digits = 1
-  ) {
+) {
   round(
     x * 100,
     digits
@@ -121,7 +123,7 @@ safe_divide <- function(
   numerator,
   denominator,
   default = NA_real_
-  ) {
+) {
   ifelse(
     denominator == 0 | is.na(
       denominator
@@ -134,7 +136,7 @@ safe_divide <- function(
 round2 <- function(
   x,
   digits = 0
-  ) {
+) {
   # Round half-up instead of banker's rounding
   posneg <- sign(
     x
@@ -156,7 +158,7 @@ round2 <- function(
 
 is_valid_date <- function(
   x
-  ) {
+) {
   !is.na(
     lubridate::ymd(
       x
@@ -170,7 +172,7 @@ is_valid_date <- function(
 
 parse_date_safe <- function(
   x
-  ) {
+) {
   # Try ymd, then mdy
   y <- suppressWarnings(
     lubridate::ymd(
@@ -193,8 +195,8 @@ parse_date_safe <- function(
 
 first_day <- function(
   date
-  ) {
-  floor_date(
+) {
+  lubridate::floor_date(
     date,
     "month"
   )
@@ -202,11 +204,11 @@ first_day <- function(
 
 last_day <- function(
   date
-  ) {
-  ceiling_date(
+) {
+  lubridate::ceiling_date(
     date,
     "month"
-  ) - days(
+  ) - lubridate::days(
     1
   )
 }
@@ -214,17 +216,17 @@ last_day <- function(
 age_at <- function(
   dob,
   ref_date = Sys.Date()
-  ) {
+) {
   ifelse(
     is.na(
       dob
     ),
     NA_real_,
     floor(
-      interval(
+      lubridate::interval(
         dob,
         ref_date
-      ) / years(
+      ) / lubridate::years(
         1
       )
     )
@@ -237,19 +239,20 @@ age_at <- function(
 
 drop_empty_rows <- function(
   df
-  ) {
-  df %>% filter(
-    apply(
-      .,
-      1,
-      not_all_na
+) {
+  df |>
+    dplyr::filter(
+      apply(
+        .,
+        1,
+        not_all_na
+      )
     )
-  )
 }
 
 drop_empty_cols <- function(
   df
-  ) {
+) {
   df[, colSums(!is.na(df)) > 0, drop = FALSE]
 }
 
@@ -257,39 +260,41 @@ rename_if_exists <- function(
   df,
   old,
   new
-  ) {
+) {
   if (
     old %in% names(
       df
     )
   ) {
-    df %>% rename(
-      !!new := !!sym(
-        old
+    df |>
+      dplyr::rename(
+        !!new := !!sym(
+          old
+        )
       )
-    )
   } else df
 }
 
 select_if_exists <- function(
-    df,
-    ...
-    ) {
+  df,
+  ...
+) {
   cols <- quos(
     ...
   )
   cols <- cols[names(cols) %in% names(df)]
-  df %>% select(
-    !!!cols
-  )
+  df |>
+    dplyr::select(
+      !!!cols
+    )
 }
 
 left_join_safe <- function(
   x,
   y,
   by
-  ) {
-  missing_keys <- setdiff(
+) {
+  missing_keys <- dplyr::setdiff(
     by,
     names(
       x
@@ -298,7 +303,7 @@ left_join_safe <- function(
   if (
     length(
       missing_keys
-     ) > 0
+    ) > 0
   ) {
     warning(
       "Join keys missing from left table: ",
@@ -318,10 +323,10 @@ left_join_safe <- function(
 distinct_across <- function(
   df,
   ...
-  ) {
-  df %>%
-    distinct(
-      across(
+) {
+  df |>
+    dplyr::distinct(
+      dplyr::across(
         c(
           ...
         )
@@ -336,20 +341,20 @@ distinct_across <- function(
 
 ordered_quarter_factor <- function(
   q
-  ) {
+) {
   factor(
     q,
     levels = paste0(
       "Q",
       1:4
-      ),
+    ),
     ordered = TRUE
    )
 }
 
 ordered_month_factor <- function(
   m
-  ) {
+) {
   factor(
     m,
     levels = month.abb,
@@ -359,8 +364,8 @@ ordered_month_factor <- function(
 
 label_yesno <- function(
   x
-  ) {
-  case_when(
+) {
+  dplyr::case_when(
     x %in% c(
       1,
       TRUE,
@@ -416,7 +421,7 @@ generate_col_types <- function(
 ) {
 
   # 1. Join metadata to mapping table
-  meta <- metadata %>%
+  meta <- metadata |>
     dplyr::mutate(
       data_type = tolower(
         trimws(
@@ -435,23 +440,23 @@ generate_col_types <- function(
     )
 
   # Fail fast if any data_type is unmapped
-  bad <- meta %>%
-    filter(
+  bad <- meta |>
+    dplyr::filter(
       is.na(
         readr_type
       )
     )
 
   if (
-    nrow(
-      bad
+      nrow(
+        bad
       ) > 0) {
     stop(
       "Unrecognized data_type values for fields: ",
       paste(
         bad$field_name,
         collapse = ", "
-        ),
+      ),
       "\nTheir data_type values were: ",
       paste(
         bad$data_type,
@@ -508,7 +513,7 @@ generate_col_types <- function(
   }
 
   # 4. Reorder metadata to match CSV column order
-  meta <- meta %>%
+  meta <- meta |>
     dplyr::slice(
       match(
         colnames,
@@ -531,7 +536,7 @@ p_path <- "P:/DATA/Data Files/"
 make_path <- function(
   ...,
   base = p_path
-  ) {
+) {
   file.path(
     base,
     ...,
@@ -550,7 +555,7 @@ read_famcare_csv <- function(
     " "
   ),
   ...
-  ) {
+) {
 
   # Read header only
   nms <- names(
@@ -559,10 +564,8 @@ read_famcare_csv <- function(
       n_max = 0,
       show_col_types = FALSE
     )
-  ) %>%
-    tolower(
-      .
-    )
+  ) |>
+    tolower()
 
   # print("DEBUG: metadata inside read_famcare_csv")
   # print(metadata %>% select(asset_id, view_field_name))
@@ -597,12 +600,12 @@ read_famcare_csv <- function(
 
 load_analytic_fields <- function() {
   metadata_dir <- Sys.getenv(
-   "METADATA_GOVERNANCE_DIR"
+    "METADATA_GOVERNANCE_DIR"
   )
 
   if (
-   metadata_dir == ""
-   ) {
+    metadata_dir == ""
+  ) {
     stop(
       "Environment variable METADATA_GOVERNANCE_DIR is not set. ",
       "Please define it in your .Renviron."
@@ -610,8 +613,8 @@ load_analytic_fields <- function() {
   }
 
   path <- file.path(
-   metadata_dir,
-   "Metadata_Governance.xlsx"
+    metadata_dir,
+    "Metadata_Governance.xlsx"
   )
 
   analytic_fields <- readxl::read_excel(
@@ -622,7 +625,7 @@ load_analytic_fields <- function() {
 
   # normalize field_name
   analytic_fields <- analytic_fields |>
-    mutate(
+    dplyr::mutate(
       field_name = janitor::make_clean_names(
         view_field_name
       )
@@ -639,17 +642,17 @@ load_analytic_fields <- function() {
 
 extract_asset_id <- function(
   path
-  ) {
+) {
   basename(
-   path
+    path
   ) |>
-  tools::file_path_sans_ext() |>
-  str_to_lower() |>
-  str_replace_all(
-   "_",
-   "-"
-  ) |>
-    str_replace(
+    tools::file_path_sans_ext() |>
+    stringr::str_to_lower() |>
+    stringr::str_replace_all(
+      "_",
+      "-"
+    ) |>
+    stringr::str_replace(
       "-\\d{4}.*$", ""
     ) |>
     trimws()
@@ -663,15 +666,15 @@ extract_asset_id <- function(
 slice_metadata <- function(
   analytic_fields,
   asset_id
-  ) {
+) {
   analytic_fields |>
-    filter(
+    dplyr::filter(
       !is.na(
         asset_id
       ),
       asset_id == !!asset_id
     ) |>
-    mutate(
+    dplyr::mutate(
       field_name = janitor::make_clean_names(
         view_field_name
       )
@@ -689,10 +692,10 @@ slice_metadata <- function(
 load_famcare_extract <- function(
   path,
   analytic_fields
-  ) {
+) {
 
   asset_id <- extract_asset_id(
-   path
+    path
   )
 
   metadata <- slice_metadata(
@@ -707,9 +710,9 @@ load_famcare_extract <- function(
   # print(metadata %>% select(asset_id, view_field_name))
 
   if (
-   nrow(
-    metadata
-   ) == 0
+    nrow(
+      metadata
+    ) == 0
   ) {
     stop(
       "No metadata found for asset_id: ",
@@ -724,24 +727,24 @@ load_famcare_extract <- function(
 
   # # Apply metadata-driven renaming
   # rename_map <- metadata |>
-  #   mutate(
-  #     variable_name = na_if(
+  #   dplyr::mutate(
+  #     variable_name = dplyr::na_if(
   #       variable_name,
   #       "NA"
   #     )
   #   ) |>
-  #   filter(
+  #   dplyr::filter(
   #    !is.na(
   #     variable_name
   #    )
   #   ) |>
-  #   select(
+  #   dplyr::select(
   #    view_field_name,
   #    variable_name
   #   )
   #
   # df <- df |>
-  #   rename_with(
+  #   dplyr::rename_with(
   #     ~ rename_map$variable_name[
   #       match(
   #        .x,
@@ -760,21 +763,21 @@ load_famcare_extract <- function(
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 build_subsets <- function(
-    full_data,
-    start_date,
-    end_date,
-    fiscal_system = c(
-      "federal",
-      "state"
-    )
-  ) {
+  full_data,
+  start_date,
+  end_date,
+  fiscal_system = c(
+    "federal",
+    "state"
+  )
+) {
 
   fiscal_system <- match.arg(
     fiscal_system
   )
 
   full_data |>
-    mutate(
+    dplyr::mutate(
       in_period =
         enrollment_starting_date >= start_date &
         enrollment_starting_date <= end_date,
@@ -787,11 +790,11 @@ build_subsets <- function(
         enrollment_ending_date <= end_date
     ) |>
     list(
-      initiated_within_period = filter(
+      initiated_within_period = dplyr::filter(
         .,
         in_period
       ),
-      dismissed_within_period = filter(
+      dismissed_within_period = dplyr::filter(
         .,
         dismissed_in_period
       )
@@ -805,31 +808,31 @@ build_subsets <- function(
 # Adds function to ensure that epicc_pathclient and epicc_full_data both have
 # one row per (client_number, tiedenrollment)
 check_epicc_keys <- function(
-    pathclient,
-    full_data
-  ) {
+  pathclient,
+  full_data
+) {
 
   pc_dupes <- pathclient |>
-    count(
+    dplyr::count(
       client_number,
       tiedenrollment
     ) |>
-    filter(
+    dplyr::filter(
       n > 1
     )
 
   fd_dupes <- full_data |>
-    count(
+    dplyr::count(
       client_number,
       tiedenrollment
     ) |>
-    filter(
+    dplyr::filter(
       n > 1
     )
 
   list(
     pathclient_duplicates = pc_dupes,
-    full_data_duplicates  = fd_dupes
+    full_data_duplicates = fd_dupes
   )
 }
 
@@ -837,12 +840,12 @@ check_epicc_keys <- function(
 # tibbles matches at least one parent form docserno in the referral flow. This
 # is a supplement to exception reports.
 check_scd_parent_matches <- function(
-    referral_flow,
-    epicc_raw
-  ) {
+  referral_flow,
+  epicc_raw
+) {
 
   parent_forms <- referral_flow |>
-    select(
+    dplyr::select(
       ref_docserno,
       ic_docserno,
       twow_docserno,
@@ -850,16 +853,16 @@ check_scd_parent_matches <- function(
       threem_docserno,
       sixm_docserno
     ) |>
-    pivot_longer(
+    tidyr::pivot_longer(
       everything(),
       values_to = "docserno"
     ) |>
-    filter(
+    dplyr::filter(
       !is.na(
         docserno
       )
     ) |>
-    distinct(
+    dplyr::distinct(
       docserno
     )
 
@@ -868,26 +871,26 @@ check_scd_parent_matches <- function(
     name
   ) {
     df |>
-      select(
+      dplyr::select(
         parent_docserno
       ) |>
-      filter(
+      dplyr::filter(
         !is.na(
           parent_docserno
         )
       ) |>
-      anti_join(
+      dplyr::anti_join(
         parent_forms,
         by = c(
           "parent_docserno" = "docserno"
         )
       ) |>
-      mutate(
+      dplyr::mutate(
         source_table = name
       )
   }
 
-  bind_rows(
+  dplyr::bind_rows(
     check_table(
       epicc_raw$epicc_active_intake,
       "active_intake"
@@ -905,11 +908,11 @@ check_scd_parent_matches <- function(
 
 # A function that counts how many enrollments have each form completed.
 summarise_form_completion <- function(
-    full_data
+  full_data
   ) {
 
   full_data |>
-    summarise(
+    dplyr::summarise(
       n_ref = sum(
         !is.na(
           ref_docserno
@@ -951,11 +954,11 @@ summarise_form_completion <- function(
 # A function to show how many enrollments have active intake, payor, and housing
 # status
 summarise_scd_coverage <- function(
-    full_data
-    ) {
+  full_data
+  ) {
 
   full_data |>
-    summarise(
+    dplyr::summarise(
       n_intake = sum(
         !is.na(
           intake_parent_docserno
@@ -976,8 +979,8 @@ summarise_scd_coverage <- function(
 
 # A function that ensures that all form columns are correctly prefixed.
 check_column_prefixes <- function(
-    full_data
-    ) {
+  full_data
+  ) {
 
   allowed_prefixes <- c(
     "ref_",
@@ -1012,25 +1015,25 @@ check_column_prefixes <- function(
     )
   ]
 
-  tibble(
+  tibble::tibble(
     column = bad_cols
     )
 }
 
 # A function to ensure that no column names collide after prefixing.
 check_no_duplicate_columns <- function(
-    full_data
-    ) {
+  full_data
+  ) {
 
-  tibble(
+  tibble::tibble(
     column = names(
       full_data
     )
   ) |>
-    count(
+    dplyr::count(
       column
     ) |>
-    filter(
+    dplyr::filter(
       n > 1
     )
 }
@@ -1039,18 +1042,18 @@ check_no_duplicate_columns <- function(
 # corresponding parent form exists. This supplements existing exception reports
 # for orphan summation records.
 check_parent_form_alignment <- function(
-    full_data
+  full_data
   ) {
 
-  tibble(
+  tibble::tibble(
     intake_without_parent =
       full_data |>
-      filter(
+      dplyr::filter(
         !is.na(
           intake_parent_docserno
         )
       ) |>
-      filter(
+      dplyr::filter(
         is.na(
           ref_docserno
         ) &
@@ -1068,18 +1071,18 @@ check_parent_form_alignment <- function(
           ) &
           is.na(
             sixm_docserno
-            )
+          )
       ) |>
       nrow(),
 
     payor_without_parent =
       full_data |>
-      filter(
+      dplyr::filter(
         !is.na(
           payor_parent_docserno
         )
       ) |>
-      filter(
+      dplyr::filter(
         is.na(
           ref_docserno
         ) &
@@ -1103,12 +1106,12 @@ check_parent_form_alignment <- function(
 
     housing_without_parent =
       full_data |>
-      filter(
+      dplyr::filter(
         !is.na(
           housing_parent_docserno
         )
       ) |>
-      filter(
+      dplyr::filter(
         is.na(
           ref_docserno
         ) &
