@@ -176,7 +176,7 @@ epicc_paths <- list(
     "FAMCare EPICC Extract/",
     "Q_EPICC_REENGAGEMENT.csv"
   ),
-  epic_active_intake = make_path(
+  epicc_active_intake = make_path(
     "FAMCare EPICC Extract/",
     "Q_EPICC_LATEST_SU_TX_AGENCY.csv"
   ),
@@ -198,7 +198,15 @@ epicc_paths <- list(
   ),
   epicc_all_payor_source = make_path(
     "FAMCare EPICC Extract/",
-    "Q_EPicc_ALL_PAYOR_SOURCE.csv"
+    "Q_EPICC_ALL_PAYOR_SOURCE.csv"
+  ),
+  epicc_case_notes = make_path(
+    "FAMCare EPICC Extract/",
+    "Q_EPICC_CASE_NOTES.csv"
+  ),
+  epicc_support_services_tracker = make_path(
+    "FAMCare EPICC Extract/",
+    "Q_EPICC_SUPPORT_SERVICES_TRACKER.csv"
   )
 )
 
@@ -374,7 +382,7 @@ load_epicc_active_intake <- function(
   analytic_fields
 ) {
   load_famcare_extract(
-    path = epicc_paths$epic_active_intake,
+    path = epicc_paths$epicc_active_intake,
     analytic_fields = analytic_fields
   )
 }
@@ -449,6 +457,34 @@ load_epicc_all_housing <- function(
 ) {
   load_famcare_extract(
     path = epicc_paths$epicc_all_housing,
+    analytic_fields = analytic_fields
+  )
+}
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# Ingest epicc_case_notes ----
+#   - more than one row per client
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+load_epicc_case_notes <- function(
+    epicc_paths,
+    analytic_fields
+) {
+  load_famcare_extract(
+    path = epicc_paths$epicc_case_notes,
+    analytic_fields = analytic_fields
+  )
+}
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# Ingest epicc_support_services_tracker ----
+#   - more than one row per client
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+load_epicc_support_services_tracker <- function(
+    epicc_paths,
+    analytic_fields
+) {
+  load_famcare_extract(
+    path = epicc_paths$epicc_support_services_tracker,
     analytic_fields = analytic_fields
   )
 }
@@ -1112,6 +1148,14 @@ run_epicc_etl <- function(
       analytic_fields
     ),
     epicc_all_housing = load_epicc_all_housing(
+      epicc_paths,
+      analytic_fields
+    ),
+    epicc_case_notes = load_epicc_case_notes(
+      epicc_paths,
+      analytic_fields
+    ),
+    epicc_support_services_tracker = load_epicc_support_services_tracker(
       epicc_paths,
       analytic_fields
     )
