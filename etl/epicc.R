@@ -1070,14 +1070,14 @@ run_epicc_etl <- function(
 
   analytic_fields <- load_analytic_fields()
 
-  print(
-    "Columns from analytic_fields + field_name placeholder"
-  )
-  print(
-    names(
-      analytic_fields
-    )
-  )
+  # print(
+  #   "Columns from analytic_fields + field_name placeholder"
+  # )
+  # print(
+  #   names(
+  #     analytic_fields
+  #   )
+  # )
 
   # =-=-=-=-=-=-=-=-=-=-=-=-=
   # 1. Raw Ingestion
